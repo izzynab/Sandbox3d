@@ -1,21 +1,19 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
 RWTexture2D<float4> Result;
 RWStructuredBuffer<float4> _Positions;
+
 Texture2D<float4> _ClipTexture;
 SamplerState sampler_ClipTexture;
 
-float clipSizeX;
-float clipSizeY;
+float _ResolutionScale;
+int _CurrentInstanceCount;
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    // TODO: insert actual code here!
-
+	//_Positions[id.x + id.y*_InstanceCount] = float4(id.x*2,id.y*2,0,1);
     _ClipTexture.Sample(sampler_ClipTexture, id.xy);
     Result[id.xy] = _ClipTexture[id.xy];
 }

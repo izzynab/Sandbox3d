@@ -4,32 +4,34 @@ using UnityEngine;
 using UnityEngine.Video;
 
 public class Converter : MonoBehaviour
-{
-    public ComputeShader shader;
+{ 
+    public Mesh mesh;
+    public Material material;
     public VideoClip clip;
+    public float resolutionScale = 4.0f;
 
-    public int instanceCount = 100000;
+    public ComputeShader computeShader;
 
+    private int currentInstanceCount = 1;
+    private ComputeBuffer instanceCountBuffer;
     private ComputeBuffer positionBuffer;
     private ComputeBuffer argsBuffer;
     private uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
 
-    public Mesh mesh;
-    public Material material;
 
     RenderTexture result;
     RenderTexture videoRenderTex;
     VideoPlayer videoPlayer;
 
 
+
+
     // Start is called before the first frame update
     void Start()
     {
-        /*result = new RenderTexture(Screen.width, Screen.height, 0);
+        result = new RenderTexture(Screen.width, Screen.height, 0);
         result.enableRandomWrite = true;
         result.Create();
-
-        shader.SetTexture(0, "Result", result);
 
         if (Screen.width != clip.width || Screen.height != clip.height)
         {
@@ -38,47 +40,65 @@ public class Converter : MonoBehaviour
         videoRenderTex = new RenderTexture((int)Screen.width, (int)Screen.height, 0);
 
         videoPlayer = GetComponent<VideoPlayer>();
+        videoPlayer.playbackSpeed = 0;
         videoPlayer.targetTexture = videoRenderTex;
         videoPlayer.clip = clip;
         videoPlayer.renderMode = VideoRenderMode.RenderTexture;
         videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
 
-        videoPlayer.Play();*/
+        videoPlayer.Play();
 
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
-        UpdateBuffers();
 
 
     }
 
+
     void UpdateBuffers()
     {
-        // Positions
+       
+        int kernelMain = computeShader.FindKernel("CSMain");
+        int kernelInit = computeShader.FindKernel("CSInit");
+        int kernelGenerate = computeShader.FindKernel("CSGenerate");
+
+        instanceCountBuffer = new ComputeBuffer(1, sizeof(int));
+        int[] analysisResult = new int[1];
+
+        computeShader.SetTexture(kernelMain, "ClipTexture", videoRenderTex);
+        computeShader.SetTexture(kernelMain, "Result", result);
+        computeShader.SetFloat("ResolutionScale", resolutionScale);
+
+        computeShader.SetBuffer(kernelMain, "ResultBuffer", instanceCountBuffer);
+        computeShader.SetBuffer(kernelInit, "ResultBuffer", instanceCountBuffer);
+
+        computeShader.Dispatch(kernelInit, 1, 1, 1);
+        computeShader.Dispatch(kernelInit, (int)(videoRenderTex.width / (8.0f* resolutionScale)), (int)(videoRenderTex.height / (8.0f * resolutionScale)), 1);
+
+        //Debug.Log((int)(videoRenderTex.width / (8.0f * resolutionScale)));
+
+        instanceCountBuffer.GetData(analysisResult);
+
+        instanceCountBuffer.Release();
+        instanceCountBuffer = null;
+
+        currentInstanceCount = analysisResult[0];
+
+
         if (positionBuffer != null)
             positionBuffer.Release();
-        positionBuffer = new ComputeBuffer(instanceCount, sizeof(float) * 4);
+        if (currentInstanceCount == 0) return;
+        positionBuffer = new ComputeBuffer((int)currentInstanceCount, sizeof(float) * 4);
 
-        shader.SetBuffer(0, "_Positions", positionBuffer);
-        
-        //make this in compute shader instead c#
-        /*Vector4[] positions = new Vector4[instanceCount];
-        for (int i = 0; i < instanceCount; i++)
-        {
-            float angle = Random.Range(0.0f, Mathf.PI * 2.0f);
-            float distance = Random.Range(20.0f, 100.0f);
-            float height = Random.Range(-2.0f, 2.0f);
-            float size = Random.Range(1f, 1.25f);
-            positions[i] = new Vector4(Mathf.Sin(angle) * distance, height, Mathf.Cos(angle) * distance, size);
-        }
-        positionBuffer.SetData(positions);*/
+        computeShader.SetBuffer(kernelGenerate, "Positions", positionBuffer);
+        //computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f * resolutionScale)), (int)(videoRenderTex.height / (8.0f * resolutionScale)), 1);
 
         material.SetBuffer("positionBuffer", positionBuffer);
 
-        // Indirect args
+
         if (mesh != null)
         {
             args[0] = mesh.GetIndexCount(0);
-            args[1] = (uint)instanceCount;
+            args[1] = (uint)currentInstanceCount;
             args[2] = mesh.GetIndexStart(0);
             args[3] = mesh.GetBaseVertex(0);
         }
@@ -88,8 +108,41 @@ public class Converter : MonoBehaviour
         }
         argsBuffer.SetData(args);
 
-        //cachedInstanceCount = instanceCount;
-        //cachedSubMeshIndex = 0;
+
+    }
+
+    private void Update()
+    {
+        if(Input.GetKey(KeyCode.RightArrow))
+        {
+            videoPlayer.frame++;
+        }
+
+        if (Input.GetKey(KeyCode.LeftArrow))
+        {
+            videoPlayer.frame--;
+        }
+
+        UpdateBuffers();
+
+        // Render
+        //Graphics.DrawMeshInstancedIndirect(mesh, 0, material, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer);
+
+    }
+
+    private void OnGUI()
+    {
+        GUIStyle style = new GUIStyle();
+        style.normal.textColor = Color.green;
+        style.fontSize = 40;
+        GUI.Label(new Rect(10, 70, 100, 20), "count: " + (currentInstanceCount).ToString(), style);
+        style.normal.textColor = Color.green;
+        GUI.Label(new Rect(10, 10, 100, 20), "percent: " + ((float) currentInstanceCount / (clip.width * clip.height)).ToString(), style);
+    }
+
+    private void OnRenderImage(RenderTexture source, RenderTexture destination)
+    {
+        Graphics.Blit(result, destination);
     }
 
     void OnDisable()
@@ -101,28 +154,11 @@ public class Converter : MonoBehaviour
         if (argsBuffer != null)
             argsBuffer.Release();
         argsBuffer = null;
+
+        if (instanceCountBuffer != null)
+            instanceCountBuffer.Release();
+        instanceCountBuffer = null;
+        
     }
 
-    private void Update()
-    {
-        /*shader.SetTexture(0, "_ClipTexture", videoRenderTex);
-
-        int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
-        int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
-        shader.Dispatch(0, threadGroupsX, threadGroupsY, 1);*/
-
-
-        // Update starting position buffer
-       // if (cachedInstanceCount != instanceCount || cachedSubMeshIndex != 0)
-         //   UpdateBuffers();
-
-        // Render
-        Graphics.DrawMeshInstancedIndirect(mesh, 0, material, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer);
-
-    }
-
-    /*private void OnRenderImage(RenderTexture source, RenderTexture destination)
-    {
-        Graphics.Blit(result, destination);
-    }*/
 }

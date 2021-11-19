@@ -50,8 +50,8 @@ Shader "Custom/InstancedShader"
                 float4 data = 0;
             #endif
 
-                float rotation = data.w * data.w * _Time.x * 0.5f;
-                rotate2D(data.xz, rotation);
+                //float rotation = data.w * data.w * _Time.x * 0.5f;
+                //rotate2D(data.xz, rotation);
 
                 float3 localPosition = v.vertex.xyz * data.w;
                 float3 worldPosition = data.xyz + localPosition;

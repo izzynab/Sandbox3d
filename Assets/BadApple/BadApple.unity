@@ -220,9 +220,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0fff4fe6a00468e499e2d9afd688573e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: 4669696e392fec945ba0a4f666ed1ddd, type: 3}
+  meshCounterShader: {fileID: 0}
+  meshPositionsShader: {fileID: 0}
   clip: {fileID: 32900000, guid: a46ebf1faf7b1c44da7854485933c40f, type: 3}
-  instanceCount: 100
+  resolutionScale: 4
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: 8458c18f73259f746b18b8500d868329, type: 2}
 --- !u!328 &827436761
