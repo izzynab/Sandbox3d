@@ -1,6 +1,7 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSInit
-#pragma kernel CSMain
+#pragma kernel CSThreshold
+#pragma kernel CSSobel
+#pragma kernel CSGreyscale
 #pragma kernel CSGenerate
 
 RWTexture2D<float4> Result;
@@ -10,50 +11,86 @@ SamplerState sampler_ClipTexture;
 
 RWStructuredBuffer<float4> Positions;
  
-RWStructuredBuffer<int> ResultBuffer;
+//RWStructuredBuffer<int> ResultBuffer;
 
 float ResolutionScale;
-float ColorOffset;
+float ColorThreshold;
+bool Invert;
+
 float ClipWidth;
+float ClipHeight;
 
 [numthreads(1, 1, 1)]
-void CSInit(uint3 id : SV_DispatchThreadID)
+void CSSobel(uint3 id : SV_DispatchThreadID)
 {
-    //ResultBuffer[0] = 0;
-}
- 
- 
-[numthreads(8, 8, 1)]
-void CSMain(uint3 id : SV_DispatchThreadID)
-{
-    ClipTexture.Sample(sampler_ClipTexture, id.xy);
-    uint4 col = ClipTexture[id.xy*ResolutionScale];
+	ClipTexture.SampleLevel(sampler_ClipTexture, id.xy,0);
+    float4 n[9];
+	//make_kernel(n,ClipTexture,sampler_ClipTexture, id.xy);
 
-    if(col.r > ColorOffset)
+	float2 coord = id.xy;
+	float w = 1.0;
+	float h = 1.0;
+
+	n[0] = ClipTexture[coord + float2( -w, -h)];
+	n[1] = ClipTexture[coord + float2(0.0, -h)];
+	n[2] = ClipTexture[coord + float2(  w, -h)];
+	n[3] = ClipTexture[coord + float2( -w, 0.0)];
+	n[4] = ClipTexture[coord];
+	n[5] = ClipTexture[coord + float2(  w, 0.0)];
+	n[6] = ClipTexture[coord + float2( -w, h)];
+	n[7] = ClipTexture[coord + float2(0.0, h)];
+	n[8] = ClipTexture[coord + float2(  w, h)];
+
+	float4 sobel_edge_h = n[2] + (2.0*n[5]) + n[8] - (n[0] + (2.0*n[3]) + n[6]);
+  	float4 sobel_edge_v = n[0] + (2.0*n[1]) + n[2] - (n[6] + (2.0*n[7]) + n[8]);
+	float4 sobel = sqrt((sobel_edge_h * sobel_edge_h) + (sobel_edge_v * sobel_edge_v));
+
+	Result[id.xy] = float4( 1.0 - sobel.rgb, 1.0 );  
+}
+
+[numthreads(1, 1, 1)]
+void CSThreshold(uint3 id : SV_DispatchThreadID)
+{
+	ClipTexture.SampleLevel(sampler_ClipTexture, id.xy,0);   
+    float4 col = ClipTexture[id.xy*ResolutionScale];
+
+	if(col.r > ColorThreshold)
     {
-        //InterlockedAdd(ResultBuffer[0], 1);
-        Result[id.xy] = float4(1,1,1,1);
+         Result[id.xy] = float4(1,1,1,1);
     }
-    else Result[id.xy] = float4(0,0,0,1);
+    else 
+    {
+         Result[id.xy] = float4(0,0,0,0);
+    }
+}
+
+[numthreads(1, 1, 1)]
+void CSGreyscale(uint3 id : SV_DispatchThreadID)
+{
+	ClipTexture.SampleLevel(sampler_ClipTexture, id.xy,0);   
+    float4 col = ClipTexture[id.xy*ResolutionScale];
+
+	float grey = (col.r + col.g + col.b)/3.0;
+	Result[id.xy] = float4(grey,grey,grey,1);
+
 }
 
 [numthreads(8, 8, 1)]
 void CSGenerate(uint3 id : SV_DispatchThreadID)
 {
-    ClipTexture.Sample(sampler_ClipTexture, id.xy);
-    uint4 col = ClipTexture[id.xy*ResolutionScale];
+    ClipTexture.SampleLevel(sampler_ClipTexture, id.xy,0); 
+	float4 col = Result[id.xy*ResolutionScale];
 
-
-    if(col.r > ColorOffset)
+    if(col.r > ColorThreshold)
     {
-         //InterlockedAdd(ResultBuffer[0], 1);
-         Positions[id.x + id.y * ClipWidth] = float4(id.x,id.y,0,1);         
-         Result[id.xy] = float4(1,1,1,1);
+        if(!Invert)Positions[id.x + id.y * ClipWidth] = float4(id.x,id.y,0,1);   
+        else Positions[id.x + id.y * ClipWidth] = float4(0,0,0,0);
+         
     }
     else 
     {
-        Positions[id.x + id.y * ClipWidth] = float4(0,0,0,0);
-        Result[id.xy] = float4(0,0,0,0);
+        if(!Invert)Positions[id.x + id.y * ClipWidth] = float4(0,0,0,0);     
+        else Positions[id.x + id.y * ClipWidth] = float4(id.x,id.y,0,1);   
     }
 
 }

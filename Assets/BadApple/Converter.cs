@@ -5,17 +5,23 @@ using UnityEngine.Video;
 
 public class Converter : MonoBehaviour
 { 
+    public enum VideoConvertType {Threshold,SobelEdgeDetection,Greyscale};
+
+    [Header("Conversion")]
+    public VideoConvertType videoConvertType;
+    public float colorThreshold = 0.9f;
+    public bool invert = false;
+
+    [Header("Other")]
     public Mesh mesh;
     public Material material;
     public VideoClip clip;
     public float resolutionScale = 4.0f;
-    public float colorOffset = 0.9f;
 
     public ComputeShader computeShader;
 
-    private int currentInstanceCount = 1;
+    //private int currentInstanceCount = 1;
     private ComputeBuffer instanceCountBuffer;
-   // private ComputeBuffer positionIndexBuffer;
     private ComputeBuffer positionBuffer;
     private ComputeBuffer argsBuffer;
     private uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
@@ -56,10 +62,10 @@ public class Converter : MonoBehaviour
 
     void UpdateBuffers()
     {
-       
-        //int kernelMain = computeShader.FindKernel("CSMain");
-        int kernelInit = computeShader.FindKernel("CSInit");
         int kernelGenerate = computeShader.FindKernel("CSGenerate");
+        int kernelSobel = computeShader.FindKernel("CSSobel");
+        int kernelThreshold = computeShader.FindKernel("CSThreshold");
+        int kernelGreyscale = computeShader.FindKernel("CSGreyscale");
 
         //instanceCountBuffer = new ComputeBuffer(1, sizeof(int));
         int[] analysisResult = new int[1];
@@ -68,29 +74,50 @@ public class Converter : MonoBehaviour
             positionBuffer.Release();
 
 
-        //positionBuffer = new ComputeBuffer((int)currentInstanceCount, sizeof(float) * 4);
         positionBuffer = new ComputeBuffer((int)(videoRenderTex.width * videoRenderTex.height), sizeof(float) * 4);
 
-
         computeShader.SetFloat("ResolutionScale", resolutionScale);
-        computeShader.SetFloat("ColorOffset", colorOffset);
+        computeShader.SetBool("Invert", invert);
+        computeShader.SetFloat("ColorThreshold", colorThreshold);
         computeShader.SetFloat("ClipWidth", videoRenderTex.width);
+        computeShader.SetFloat("ClipHeight", videoRenderTex.height);
 
         computeShader.SetTexture(kernelGenerate, "ClipTexture", videoRenderTex);
         computeShader.SetTexture(kernelGenerate, "Result", result);
         computeShader.SetBuffer(kernelGenerate, "Positions", positionBuffer);
 
-        computeShader.Dispatch(kernelInit, 1, 1, 1);
-        computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
+        computeShader.SetTexture(kernelSobel, "ClipTexture", videoRenderTex);
+        computeShader.SetTexture(kernelSobel, "Result", result);
+
+        computeShader.SetTexture(kernelThreshold, "ClipTexture", videoRenderTex);
+        computeShader.SetTexture(kernelThreshold, "Result", result);
+
+        computeShader.SetTexture(kernelGreyscale, "ClipTexture", videoRenderTex);
+        computeShader.SetTexture(kernelGreyscale, "Result", result);
+
+        //computeShader.Dispatch(kernelInit, 1, 1, 1);
+
+        switch (videoConvertType)
+        {
+            case VideoConvertType.Threshold:
+                computeShader.Dispatch(kernelThreshold, (int)(videoRenderTex.width ), (int)(videoRenderTex.height), 1);
+                computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
+                break;
+            case VideoConvertType.SobelEdgeDetection:
+                computeShader.Dispatch(kernelSobel, (int)(videoRenderTex.width), (int)(videoRenderTex.height ), 1);
+                computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
+                break;
+            case VideoConvertType.Greyscale:
+                computeShader.Dispatch(kernelGreyscale, (int)(videoRenderTex.width), (int)(videoRenderTex.height ), 1);
+                computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
+                break;
+        }
 
 
         //instanceCountBuffer.GetData(analysisResult);
-
         //instanceCountBuffer.Release();
         //instanceCountBuffer = null;
-
         //currentInstanceCount = analysisResult[0];
-        //if (currentInstanceCount == 0) return;
 
         material.SetBuffer("positionBuffer", positionBuffer);
 
@@ -125,7 +152,7 @@ public class Converter : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            //UpdateBuffers();
+            videoPlayer.playbackSpeed = 1;
         }
 
         UpdateBuffers();
@@ -140,9 +167,9 @@ public class Converter : MonoBehaviour
         GUIStyle style = new GUIStyle();
         style.normal.textColor = Color.green;
         style.fontSize = 40;
-        GUI.Label(new Rect(10, 70, 100, 20), "count: " + (currentInstanceCount).ToString(), style);
+        //GUI.Label(new Rect(10, 70, 100, 20), "count: " + (currentInstanceCount).ToString(), style);
         style.normal.textColor = Color.green;
-        GUI.Label(new Rect(10, 10, 100, 20), "percent: " + ((float) currentInstanceCount / (clip.width * clip.height)).ToString(), style);
+        //GUI.Label(new Rect(10, 10, 100, 20), "percent: " + ((float) currentInstanceCount / (clip.width * clip.height)).ToString(), style);
     }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
