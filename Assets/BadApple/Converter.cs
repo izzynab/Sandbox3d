@@ -9,11 +9,13 @@ public class Converter : MonoBehaviour
     public Material material;
     public VideoClip clip;
     public float resolutionScale = 4.0f;
+    public float colorOffset = 0.9f;
 
     public ComputeShader computeShader;
 
     private int currentInstanceCount = 1;
     private ComputeBuffer instanceCountBuffer;
+   // private ComputeBuffer positionIndexBuffer;
     private ComputeBuffer positionBuffer;
     private ComputeBuffer argsBuffer;
     private uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
@@ -22,8 +24,6 @@ public class Converter : MonoBehaviour
     RenderTexture result;
     RenderTexture videoRenderTex;
     VideoPlayer videoPlayer;
-
-
 
 
     // Start is called before the first frame update
@@ -50,47 +50,47 @@ public class Converter : MonoBehaviour
 
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
 
-
+        UpdateBuffers();
     }
 
 
     void UpdateBuffers()
     {
        
-        int kernelMain = computeShader.FindKernel("CSMain");
+        //int kernelMain = computeShader.FindKernel("CSMain");
         int kernelInit = computeShader.FindKernel("CSInit");
         int kernelGenerate = computeShader.FindKernel("CSGenerate");
 
-        instanceCountBuffer = new ComputeBuffer(1, sizeof(int));
+        //instanceCountBuffer = new ComputeBuffer(1, sizeof(int));
         int[] analysisResult = new int[1];
-
-        computeShader.SetTexture(kernelMain, "ClipTexture", videoRenderTex);
-        computeShader.SetTexture(kernelMain, "Result", result);
-        computeShader.SetFloat("ResolutionScale", resolutionScale);
-
-        computeShader.SetBuffer(kernelMain, "ResultBuffer", instanceCountBuffer);
-        computeShader.SetBuffer(kernelInit, "ResultBuffer", instanceCountBuffer);
-
-        computeShader.Dispatch(kernelInit, 1, 1, 1);
-        computeShader.Dispatch(kernelInit, (int)(videoRenderTex.width / (8.0f* resolutionScale)), (int)(videoRenderTex.height / (8.0f * resolutionScale)), 1);
-
-        //Debug.Log((int)(videoRenderTex.width / (8.0f * resolutionScale)));
-
-        instanceCountBuffer.GetData(analysisResult);
-
-        instanceCountBuffer.Release();
-        instanceCountBuffer = null;
-
-        currentInstanceCount = analysisResult[0];
-
 
         if (positionBuffer != null)
             positionBuffer.Release();
-        if (currentInstanceCount == 0) return;
-        positionBuffer = new ComputeBuffer((int)currentInstanceCount, sizeof(float) * 4);
 
+
+        //positionBuffer = new ComputeBuffer((int)currentInstanceCount, sizeof(float) * 4);
+        positionBuffer = new ComputeBuffer((int)(videoRenderTex.width * videoRenderTex.height), sizeof(float) * 4);
+
+
+        computeShader.SetFloat("ResolutionScale", resolutionScale);
+        computeShader.SetFloat("ColorOffset", colorOffset);
+        computeShader.SetFloat("ClipWidth", videoRenderTex.width);
+
+        computeShader.SetTexture(kernelGenerate, "ClipTexture", videoRenderTex);
+        computeShader.SetTexture(kernelGenerate, "Result", result);
         computeShader.SetBuffer(kernelGenerate, "Positions", positionBuffer);
-        //computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f * resolutionScale)), (int)(videoRenderTex.height / (8.0f * resolutionScale)), 1);
+
+        computeShader.Dispatch(kernelInit, 1, 1, 1);
+        computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
+
+
+        //instanceCountBuffer.GetData(analysisResult);
+
+        //instanceCountBuffer.Release();
+        //instanceCountBuffer = null;
+
+        //currentInstanceCount = analysisResult[0];
+        //if (currentInstanceCount == 0) return;
 
         material.SetBuffer("positionBuffer", positionBuffer);
 
@@ -98,7 +98,7 @@ public class Converter : MonoBehaviour
         if (mesh != null)
         {
             args[0] = mesh.GetIndexCount(0);
-            args[1] = (uint)currentInstanceCount;
+            args[1] = (uint)(videoRenderTex.width * videoRenderTex.height);
             args[2] = mesh.GetIndexStart(0);
             args[3] = mesh.GetBaseVertex(0);
         }
@@ -123,10 +123,15 @@ public class Converter : MonoBehaviour
             videoPlayer.frame--;
         }
 
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            //UpdateBuffers();
+        }
+
         UpdateBuffers();
 
         // Render
-        //Graphics.DrawMeshInstancedIndirect(mesh, 0, material, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer);
+        Graphics.DrawMeshInstancedIndirect(mesh, 0, material, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer);
 
     }
 
