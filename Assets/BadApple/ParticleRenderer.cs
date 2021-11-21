@@ -21,7 +21,7 @@ public class ParticleRenderer : MonoBehaviour
 
     public Vector3 direction;
     [Range(0,20)]
-    public float velocity = 1;
+    public float speed = 2;
     public float lifetime = 3;
     public int particleCount = 1000000;
 
@@ -54,12 +54,11 @@ public class ParticleRenderer : MonoBehaviour
         for (int i = 0; i < particleCount; i++)
         {
             // Initial life value
-            particleArray[i].life = 0;
+            particleArray[i].life = Random.value * lifetime + 1;
         }
 
         // create compute buffer
         particleBuffer = new ComputeBuffer(particleCount, 7 * sizeof(float));
-
         particleBuffer.SetData(particleArray);
 
         // find the id of the kernel
@@ -72,8 +71,12 @@ public class ParticleRenderer : MonoBehaviour
 
     void OnRenderObject()
     {
-        particleMaterial.SetPass(0);
-        Graphics.DrawProceduralNow(MeshTopology.Points, 1, particleCount);
+        if(particleType == ParticleType.Point)
+        {
+            particleMaterial.SetPass(0);
+            Graphics.DrawProceduralNow(MeshTopology.Points, 1, particleCount);
+        }
+        
     }
 
     void OnDestroy()
@@ -86,7 +89,6 @@ public class ParticleRenderer : MonoBehaviour
     void Update()
     {
         if (mesh == null) particleType = ParticleType.Point;
-        mWarpCount = Mathf.CeilToInt((float)particleCount / WARP_SIZE);
         spawnPosition = gameObject.transform.position;
 
         float[] spawnPositions = { spawnPosition.x, spawnPosition.y, spawnPosition.z };
@@ -94,13 +96,19 @@ public class ParticleRenderer : MonoBehaviour
 
         // Send datas to the compute shader
         particleEmitterShader.SetFloat("deltaTime", Time.deltaTime);
-        particleEmitterShader.SetFloat("velocity", velocity);
+        particleEmitterShader.SetFloat("speed", speed);
         particleEmitterShader.SetFloat("lifetime", lifetime);
         particleEmitterShader.SetFloats("spawnPosition", spawnPositions);
         particleEmitterShader.SetFloats("direction", directions);
 
         // Update the Particles
+        mWarpCount = Mathf.CeilToInt((float)particleCount / WARP_SIZE);
         particleEmitterShader.Dispatch(particleKernelID, mWarpCount, 1, 1);
+
+        if (particleType == ParticleType.Mesh)
+        {
+            Graphics.DrawMeshInstancedProcedural(mesh, 0, particleMaterial, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), particleCount);
+        }
     }
   
 }

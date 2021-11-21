@@ -1,60 +1,69 @@
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
 Shader "Custom/Particle"
 {
-   	SubShader {
-		Pass {
-		Tags{ "RenderType" = "Opaque" }
-		LOD 200
-		Blend SrcAlpha one
+    Properties
+    {
+        _Color ("Main Color", Color) = (1,1,1,1)
+        _Size ("Mesh Size",float)= 1
+    }
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" }
+        LOD 100
 
-		CGPROGRAM
-		// Physically based Standard lighting model, and enable shadows on all light types
-		#pragma vertex vert
-		#pragma fragment frag
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+          
+            #pragma target 4.5
 
-		#include "UnityCG.cginc"
-
-		// Use shader model 3.0 target, to get nicer looking lighting
-		#pragma target 4.5
+            #include "UnityCG.cginc"
 
 
-		struct v2f{
-			float4 position : SV_POSITION;
-			float4 color : COLOR;
-		};
+            struct Particle{
+			    float3 position;
+			    float3 velocity;
+			    float life;
+		    };
 		
-		
-		struct Particle{
-			float3 position;
-			float3 velocity;
-			float life;
-		};
-		
-		StructuredBuffer<Particle> particleBuffer;
-		
+		    StructuredBuffer<Particle> particleBuffer;
 
-		v2f vert( uint instance_id : SV_InstanceID)
-		{
-			v2f o = (v2f)0;
+            struct v2f
+            {
+                float4 pos : SV_POSITION;
+                float4 color : COLOR;
+            };
 
-			// Color
-			float life = particleBuffer[instance_id].life;
-			float lerpVal = life * 0.25f;
-			o.color = fixed4(1.0f - lerpVal+0.1, lerpVal+0.1, 1.0f, lerpVal);
+            float _Size;
 
-			// Position
-			o.position = UnityObjectToClipPos(float4(particleBuffer[instance_id].position, 1.0f));
+            v2f vert (appdata_full v, uint instanceID : SV_InstanceID)
+            {
+                Particle data = particleBuffer[instanceID];
 
-			return o;
-		}
+                float3 localPosition = v.vertex.xyz * _Size;
+                float3 worldPosition = data.position + localPosition;
 
-		float4 frag(v2f i) : COLOR
-		{
-			return i.color;
-		}
+                v2f o;
+                o.pos = mul(UNITY_MATRIX_VP, float4(worldPosition, 1.0f));
+                // Color
+			    float life = particleBuffer[instanceID].life;
+			    float lerpVal = life * 0.25f;
+			    o.color = fixed4(1.0f - lerpVal+0.1, lerpVal+0.1, 1.0f, lerpVal);
 
+                return o;
+            }
 
-		ENDCG
-		}
-	}
-	FallBack Off
+             // color from the material
+            fixed4 _Color;
+
+            fixed4 frag (v2f i) : SV_Target
+            {
+                return i.color;
+            }
+            ENDCG
+        }
+    }
 }
