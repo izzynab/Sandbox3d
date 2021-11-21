@@ -1,0 +1,33 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSGenerate
+
+Texture2D<float4> ResultTexture;
+SamplerState sampler_ResultTexture;
+
+RWStructuredBuffer<float4> Positions;
+
+bool Invert;
+
+float ResolutionScale;
+float ColorThreshold;
+
+float ClipWidth;
+float ClipHeight;
+
+[numthreads(8, 8, 1)]
+void CSGenerate(uint3 id : SV_DispatchThreadID)
+{
+    ResultTexture.SampleLevel(sampler_ResultTexture, id.xy,0); 
+	float4 col = ResultTexture[id.xy*ResolutionScale];
+
+    if(col.r > ColorThreshold)
+    {
+        Positions[id.x + id.y * ClipWidth] = float4(id.x,id.y,0,1);   
+         
+    }
+    else 
+    {
+        Positions[id.x + id.y * ClipWidth] = float4(0,0,0,0);     
+    }
+
+}

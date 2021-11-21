@@ -26,6 +26,7 @@ public class FlyCamera : MonoBehaviour
     private void Start()
     {
         Cursor.visible = false;
+        lastMouse = Input.mousePosition;
     }
 
     void Update()

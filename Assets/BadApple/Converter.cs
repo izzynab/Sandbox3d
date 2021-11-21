@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Video;
+using UnityEditor;
 
 public class Converter : MonoBehaviour
 { 
@@ -18,7 +19,8 @@ public class Converter : MonoBehaviour
     public VideoClip clip;
     public float resolutionScale = 4.0f;
 
-    public ComputeShader computeShader;
+    public ComputeShader convertShader;
+    public ComputeShader particleShader;
 
     //private int currentInstanceCount = 1;
     private ComputeBuffer instanceCountBuffer;
@@ -35,14 +37,19 @@ public class Converter : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (Screen.width != clip.width || Screen.height != clip.height)
+        {
+            Debug.Log("Sizes of clip and screen do not match, plese change the resolution of the screen to: " +clip.width + " " + clip.height);
+            Screen.SetResolution((int)clip.width, (int)clip.height, false);
+            
+        }
+
+        FindObjectOfType<Camera>().transform.position = new Vector3(clip.width / 2, clip.height / 2, -650);
+
         result = new RenderTexture(Screen.width, Screen.height, 0);
         result.enableRandomWrite = true;
         result.Create();
 
-        if (Screen.width != clip.width || Screen.height != clip.height)
-        {
-            Screen.SetResolution((int)clip.width, (int)clip.height,false);
-        }
         videoRenderTex = new RenderTexture((int)Screen.width, (int)Screen.height, 0);
 
         videoPlayer = GetComponent<VideoPlayer>();
@@ -62,10 +69,11 @@ public class Converter : MonoBehaviour
 
     void UpdateBuffers()
     {
-        int kernelGenerate = computeShader.FindKernel("CSGenerate");
-        int kernelSobel = computeShader.FindKernel("CSSobel");
-        int kernelThreshold = computeShader.FindKernel("CSThreshold");
-        int kernelGreyscale = computeShader.FindKernel("CSGreyscale");
+        int kernelGenerate = particleShader.FindKernel("CSGenerate");
+
+        int kernelSobel = convertShader.FindKernel("CSSobel");
+        int kernelThreshold = convertShader.FindKernel("CSThreshold");
+        int kernelGreyscale = convertShader.FindKernel("CSGreyscale");
 
         //instanceCountBuffer = new ComputeBuffer(1, sizeof(int));
         int[] analysisResult = new int[1];
@@ -76,40 +84,49 @@ public class Converter : MonoBehaviour
 
         positionBuffer = new ComputeBuffer((int)(videoRenderTex.width * videoRenderTex.height), sizeof(float) * 4);
 
-        computeShader.SetFloat("ResolutionScale", resolutionScale);
-        computeShader.SetBool("Invert", invert);
-        computeShader.SetFloat("ColorThreshold", colorThreshold);
-        computeShader.SetFloat("ClipWidth", videoRenderTex.width);
-        computeShader.SetFloat("ClipHeight", videoRenderTex.height);
+        //convertShader.SetFloat("ResolutionScale", resolutionScale);
+        //convertShader.SetBool("Invert", invert);
+        convertShader.SetFloat("ColorThreshold", colorThreshold);
+        //convertShader.SetFloat("ClipWidth", videoRenderTex.width);
+        //convertShader.SetFloat("ClipHeight", videoRenderTex.height);
 
-        computeShader.SetTexture(kernelGenerate, "ClipTexture", videoRenderTex);
-        computeShader.SetTexture(kernelGenerate, "Result", result);
-        computeShader.SetBuffer(kernelGenerate, "Positions", positionBuffer);
+        convertShader.SetTexture(kernelGenerate, "ClipTexture", videoRenderTex);
+        convertShader.SetTexture(kernelGenerate, "Result", result);
+        convertShader.SetBuffer(kernelGenerate, "Positions", positionBuffer);
 
-        computeShader.SetTexture(kernelSobel, "ClipTexture", videoRenderTex);
-        computeShader.SetTexture(kernelSobel, "Result", result);
+        convertShader.SetTexture(kernelSobel, "ClipTexture", videoRenderTex);
+        convertShader.SetTexture(kernelSobel, "Result", result);
 
-        computeShader.SetTexture(kernelThreshold, "ClipTexture", videoRenderTex);
-        computeShader.SetTexture(kernelThreshold, "Result", result);
+        convertShader.SetTexture(kernelThreshold, "ClipTexture", videoRenderTex);
+        convertShader.SetTexture(kernelThreshold, "Result", result);
 
-        computeShader.SetTexture(kernelGreyscale, "ClipTexture", videoRenderTex);
-        computeShader.SetTexture(kernelGreyscale, "Result", result);
+        convertShader.SetTexture(kernelGreyscale, "ClipTexture", videoRenderTex);
+        convertShader.SetTexture(kernelGreyscale, "Result", result);
 
-        //computeShader.Dispatch(kernelInit, 1, 1, 1);
+        particleShader.SetBool("Invert", invert);
+        particleShader.SetFloat("ResolutionScale", resolutionScale);
+        particleShader.SetFloat("ColorThreshold", colorThreshold);
+        particleShader.SetFloat("ClipWidth", videoRenderTex.width);
+        particleShader.SetFloat("ClipHeight", videoRenderTex.height);
+
+        particleShader.SetTexture(kernelGenerate, "ResultTexture", result);
+        particleShader.SetBuffer(kernelGenerate, "Positions", positionBuffer);
+
+        //convertShader.Dispatch(kernelInit, 1, 1, 1);
 
         switch (videoConvertType)
         {
             case VideoConvertType.Threshold:
-                computeShader.Dispatch(kernelThreshold, (int)(videoRenderTex.width ), (int)(videoRenderTex.height), 1);
-                computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
+                convertShader.Dispatch(kernelThreshold, (int)(videoRenderTex.width ), (int)(videoRenderTex.height), 1);
+                particleShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
                 break;
             case VideoConvertType.SobelEdgeDetection:
-                computeShader.Dispatch(kernelSobel, (int)(videoRenderTex.width), (int)(videoRenderTex.height ), 1);
-                computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
+                convertShader.Dispatch(kernelSobel, (int)(videoRenderTex.width), (int)(videoRenderTex.height ), 1);
+                particleShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
                 break;
             case VideoConvertType.Greyscale:
-                computeShader.Dispatch(kernelGreyscale, (int)(videoRenderTex.width), (int)(videoRenderTex.height ), 1);
-                computeShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
+                convertShader.Dispatch(kernelGreyscale, (int)(videoRenderTex.width), (int)(videoRenderTex.height ), 1);
+                particleShader.Dispatch(kernelGenerate, (int)(videoRenderTex.width / (8.0f)), (int)(videoRenderTex.height / (8.0f)), 1);
                 break;
         }
 
@@ -158,24 +175,15 @@ public class Converter : MonoBehaviour
         UpdateBuffers();
 
         // Render
-        Graphics.DrawMeshInstancedIndirect(mesh, 0, material, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer);
-
+        //Graphics.DrawMeshInstancedIndirect(mesh, 0, material, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer);
+        Graphics.DrawMeshInstancedProcedural(mesh, 0, material, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), videoRenderTex.width * videoRenderTex.height);
     }
 
-    private void OnGUI()
-    {
-        GUIStyle style = new GUIStyle();
-        style.normal.textColor = Color.green;
-        style.fontSize = 40;
-        //GUI.Label(new Rect(10, 70, 100, 20), "count: " + (currentInstanceCount).ToString(), style);
-        style.normal.textColor = Color.green;
-        //GUI.Label(new Rect(10, 10, 100, 20), "percent: " + ((float) currentInstanceCount / (clip.width * clip.height)).ToString(), style);
-    }
 
-    private void OnRenderImage(RenderTexture source, RenderTexture destination)
-    {
-        Graphics.Blit(result, destination);
-    }
+    //private void OnRenderImage(RenderTexture source, RenderTexture destination)
+   // {
+        //Graphics.Blit(result, destination);
+    //}
 
     void OnDisable()
     {
