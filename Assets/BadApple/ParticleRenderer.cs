@@ -32,9 +32,9 @@ public class ParticleRenderer : MonoBehaviour
     ComputeBuffer particleBuffer;
 
     /// Number of particle per warp.
-    private const int WARP_SIZE = 256; // TODO?
+    private const int WARP_SIZE = 256;
     /// Number of warp needed.
-    private int mWarpCount; // TODO?
+    private int mWarpCount; 
 
     // Use this for initialization
     void Start()

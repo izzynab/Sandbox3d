@@ -147,19 +147,18 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 71124463}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5306b3393a51a4d4788ea16d75e77c56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   particleType: 0
-  mesh: {fileID: 0}
+  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   particleMaterial: {fileID: 2100000, guid: 4aab5cb7b6a16a64db82753125f53e2d, type: 2}
   direction: {x: 0, y: 0, z: 0.39}
-  velocity: 3.21
-  lifetime: 3
-  maxParticleCount: 1000000
-  particlePerFrame: 3000
+  speed: 2
+  lifetime: 5
+  particleCount: 100000
   particleEmitterShader: {fileID: 7200000, guid: d963fe244ae64a14f9df78bc22a6c9fb, type: 3}
 --- !u!4 &71124465
 Transform:
@@ -226,7 +225,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: ee28bb4051abf97498fb5df55d8991eb, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -263,13 +262,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 664629664}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: 0, y: -3.09, z: 0}
-  m_LocalScale: {x: 14.642197, y: 0.19255, z: 20.55135}
+  m_LocalScale: {x: 60.99793, y: 0.19255, z: 52.124386}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!1 &827436756
 GameObject:
   m_ObjectHideFlags: 0
@@ -282,8 +281,6 @@ GameObject:
   - component: {fileID: 827436762}
   - component: {fileID: 827436758}
   - component: {fileID: 827436757}
-  - component: {fileID: 827436760}
-  - component: {fileID: 827436761}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -356,62 +353,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 22.704, z: 0}
---- !u!114 &827436760
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 827436756}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0fff4fe6a00468e499e2d9afd688573e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  videoConvertType: 1
-  colorThreshold: 0.9
-  invert: 0
-  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-  material: {fileID: 2100000, guid: 8458c18f73259f746b18b8500d868329, type: 2}
-  clip: {fileID: 32900000, guid: a46ebf1faf7b1c44da7854485933c40f, type: 3}
-  resolutionScale: 1
-  convertShader: {fileID: 7200000, guid: e16016b72e32205458f903124e654a90, type: 3}
-  particleShader: {fileID: 7200000, guid: 22ad008183e9d62479be129f77941bc1, type: 3}
---- !u!328 &827436761
-VideoPlayer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 827436756}
-  m_Enabled: 1
-  m_VideoClip: {fileID: 0}
-  m_TargetCameraAlpha: 1
-  m_TargetCamera3DLayout: 0
-  m_TargetCamera: {fileID: 827436758}
-  m_TargetTexture: {fileID: 0}
-  m_TimeReference: 0
-  m_TargetMaterialRenderer: {fileID: 0}
-  m_TargetMaterialProperty: _MainTex
-  m_RenderMode: 0
-  m_AspectRatio: 2
-  m_DataSource: 0
-  m_PlaybackSpeed: 1
-  m_AudioOutputMode: 0
-  m_TargetAudioSources:
-  - {fileID: 0}
-  m_DirectAudioVolumes:
-  - 1
-  m_Url: 
-  m_EnabledAudioTracks: 01
-  m_DirectAudioMutes: 00
-  m_ControlledAudioTrackCount: 1
-  m_PlayOnAwake: 0
-  m_SkipOnDrop: 1
-  m_Looping: 1
-  m_WaitForFirstFrame: 1
-  m_FrameReadyEventEnabled: 0
-  m_VideoShaders: []
 --- !u!114 &827436762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -425,6 +366,112 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainSpeed: 20
+--- !u!1 &1435942418
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1435942421}
+  - component: {fileID: 1435942420}
+  - component: {fileID: 1435942419}
+  - component: {fileID: 1435942422}
+  m_Layer: 0
+  m_Name: VideoToParticle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1435942419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1435942418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0fff4fe6a00468e499e2d9afd688573e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  videoConvertType: 0
+  clip: {fileID: 32900000, guid: a46ebf1faf7b1c44da7854485933c40f, type: 3}
+  convertShader: {fileID: 7200000, guid: e16016b72e32205458f903124e654a90, type: 3}
+  materialBlitResult: {fileID: 2100000, guid: ee28bb4051abf97498fb5df55d8991eb, type: 2}
+--- !u!328 &1435942420
+VideoPlayer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1435942418}
+  m_Enabled: 1
+  m_VideoClip: {fileID: 0}
+  m_TargetCameraAlpha: 1
+  m_TargetCamera3DLayout: 0
+  m_TargetCamera: {fileID: 0}
+  m_TargetTexture: {fileID: 0}
+  m_TimeReference: 0
+  m_TargetMaterialRenderer: {fileID: 0}
+  m_TargetMaterialProperty: _MainTex
+  m_RenderMode: 2
+  m_AspectRatio: 2
+  m_DataSource: 0
+  m_PlaybackSpeed: 1
+  m_AudioOutputMode: 2
+  m_TargetAudioSources:
+  - {fileID: 0}
+  m_DirectAudioVolumes:
+  - 1
+  m_Url: 
+  m_EnabledAudioTracks: 01
+  m_DirectAudioMutes: 00
+  m_ControlledAudioTrackCount: 1
+  m_PlayOnAwake: 1
+  m_SkipOnDrop: 1
+  m_Looping: 0
+  m_WaitForFirstFrame: 1
+  m_FrameReadyEventEnabled: 0
+  m_VideoShaders: []
+--- !u!4 &1435942421
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1435942418}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -4.032921, y: -4.7889233, z: 10.652252}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1435942422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1435942418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1aa0e1320166cca43bf895b09ba4239e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  particleType: 0
+  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  particleMaterial: {fileID: 2100000, guid: 4aab5cb7b6a16a64db82753125f53e2d, type: 2}
+  particleShader: {fileID: 7200000, guid: 22ad008183e9d62479be129f77941bc1, type: 3}
+  direction: {x: 0, y: 0, z: 0}
+  speed: 2
+  lifetime: 1
+  particleCount: 1000000
+  invert: 0
+  particleThreshold: 0
 --- !u!1 &2000860269
 GameObject:
   m_ObjectHideFlags: 0
