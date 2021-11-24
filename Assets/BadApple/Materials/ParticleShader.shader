@@ -27,6 +27,8 @@ Shader "Custom/Particle"
 			    float3 position;
 			    float3 velocity;
 			    float life;
+                float3 color;
+                float size;
 		    };
 		
 		    StructuredBuffer<Particle> particleBuffer;
@@ -43,15 +45,15 @@ Shader "Custom/Particle"
             {
                 Particle data = particleBuffer[instanceID];
 
-                float3 localPosition = v.vertex.xyz * _Size;
+                float3 localPosition = v.vertex.xyz * _Size*data.size;
                 float3 worldPosition = data.position + localPosition;
 
                 v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(worldPosition, 1.0f));
                 // Color
-			    float life = particleBuffer[instanceID].life;
+			    float life = data.life;
 			    float lerpVal = life * 0.25f;
-			    o.color = fixed4(1.0f - lerpVal+0.1, lerpVal+0.1, 1.0f, lerpVal);
+			    o.color = fixed4(data.color,1);
 
                 return o;
             }

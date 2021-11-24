@@ -12,6 +12,8 @@ public class ParticleFromVideo : MonoBehaviour
         public Vector3 position;
         public Vector3 velocity;
         public float life;
+        public Vector3 color;
+        public float size;
     }
 
     public ParticleType particleType;
@@ -20,28 +22,37 @@ public class ParticleFromVideo : MonoBehaviour
     public ComputeShader particleShader;
 
 
-    public Vector3 direction;
+    //public Vector3 direction;
     [Range(0, 20)]
     public float speed = 2;
     public float lifetime = 1;
     public int particleCount = 1000000;
 
+    public float resolutionOfVideo = 1;
+    public int resolutionOfParticles = 1;
+
     public bool invert;
     public float particleThreshold;
 
+    public float mainParticleSize = 1;
+    public float otherParticleSize = 0.2f;
+
+    public float randomizeParticleMultipler = 10;
 
     private ComputeBuffer activePositionsBuffer;
     private ComputeBuffer numberOfActivePixelsBuffer;
+    private ComputeBuffer counter;
     private ComputeBuffer particleBuffer;
 
     private Converter converter;
     private RenderTexture resultTexture;
 
     private int activePixelsKernelID;
+    private int activatePixelsKernelIDInvert;
     private int generateKernelID;
 
     /// Number of particle per warp.
-    private const int WARP_SIZE = 256;
+    private const int WARP_SIZE = 64;
     /// Number of warp needed.
     private int mWarpCount;
 
@@ -51,14 +62,14 @@ public class ParticleFromVideo : MonoBehaviour
         resultTexture = converter.GetResultTexture();
 
         activePixelsKernelID = particleShader.FindKernel("CSActivePixels");
+        activatePixelsKernelIDInvert = particleShader.FindKernel("CSActivePixelsInvert");
         generateKernelID = particleShader.FindKernel("CSGenerate");
 
         if (mesh == null) particleType = ParticleType.Point;
 
-        particleMaterial.SetBuffer("particleBuffer", particleBuffer);
+        particleCount = resultTexture.width * resultTexture.height;
 
-
-
+        FindObjectOfType<Camera>().transform.position = new Vector3(resultTexture.width / 2, resultTexture.height / 2, -650);
     }
 
     void Update()
@@ -83,53 +94,57 @@ public class ParticleFromVideo : MonoBehaviour
         if(activePositionsBuffer!=null) activePositionsBuffer.Release();
         if (particleBuffer != null) particleBuffer.Release();
         if (numberOfActivePixelsBuffer != null) numberOfActivePixelsBuffer.Release();
+        if (counter != null) counter.Release();
 
         resultTexture = converter.GetResultTexture();
 
-        activePositionsBuffer = new ComputeBuffer((resultTexture.width * resultTexture.height), sizeof(int) * 2);//make this rather a render texture
-        numberOfActivePixelsBuffer = new ComputeBuffer(1, sizeof(int));
-        particleBuffer = new ComputeBuffer(particleCount, sizeof(float) * 7);
+        activePositionsBuffer = new ComputeBuffer((resultTexture.width * resultTexture.height), sizeof(int) * 2);//this should be continous values of coords
+        numberOfActivePixelsBuffer = new ComputeBuffer(1, sizeof(uint));
+        counter = new ComputeBuffer(1, sizeof(int));
+        particleBuffer = new ComputeBuffer(particleCount, sizeof(float) * 11);
 
         int[] datatoset = { 0 };
         numberOfActivePixelsBuffer.SetData(datatoset);
+        //counter.SetData(datatoset);
 
-
-        particleShader.SetBool("Invert", invert);
         particleShader.SetFloat("ParticleThreshold", particleThreshold);
+        particleShader.SetFloat("Resolution", resolutionOfVideo);
         particleShader.SetFloat("ResultTextureWidth", resultTexture.width);
-        particleShader.SetFloat("NumberOfPixelsActive", resultTexture.width * resultTexture.height);
+        particleShader.SetInt("resolutionOfParticles", resolutionOfParticles); 
+        particleShader.SetFloat("randomizeParticleMultipler", randomizeParticleMultipler);
 
         particleShader.SetBuffer(activePixelsKernelID, "ActivePositions", activePositionsBuffer);
         particleShader.SetBuffer(activePixelsKernelID, "NumberOfActivePixels", numberOfActivePixelsBuffer);
         particleShader.SetTexture(activePixelsKernelID, "ResultTexture", resultTexture);
 
-        particleShader.Dispatch(activePixelsKernelID, resultTexture.width, resultTexture.height, 1);
+        particleShader.SetBuffer(activatePixelsKernelIDInvert, "ActivePositions", activePositionsBuffer);
+        particleShader.SetBuffer(activatePixelsKernelIDInvert, "NumberOfActivePixels", numberOfActivePixelsBuffer);
+        particleShader.SetTexture(activatePixelsKernelIDInvert, "ResultTexture", resultTexture);
+
+        if (invert) particleShader.Dispatch(activatePixelsKernelIDInvert, Mathf.CeilToInt(resultTexture.width/resolutionOfParticles), Mathf.CeilToInt(resultTexture.height/ resolutionOfParticles), 1);
+        else particleShader.Dispatch(activePixelsKernelID, Mathf.CeilToInt(resultTexture.width / resolutionOfParticles), Mathf.CeilToInt(resultTexture.height / resolutionOfParticles), 1);
 
 
-        int[] numberOfActivePixels = { 0 };
+        uint[] numberOfActivePixels = { 0 };
         numberOfActivePixelsBuffer.GetData(numberOfActivePixels);      
-        if (numberOfActivePixels[0] > 1) Debug.Log("numberOfActivePixels " + numberOfActivePixels[0]);
 
-        Vector2Int[] data = new Vector2Int[1];
-        activePositionsBuffer.GetData(data);//this data have size of 1 milion
-        if (data.Length > 1) Debug.Log("activePositionsBuffer " + data.Length);
-
-        //foreach (var d in data)
-        {
-            //Debug.Log(d.ToString());
-        }
-
-
-        /*particleShader.SetInt("CountOfActivePixels", numberOfActivePixels[0]);
+        //particleShader.SetInt("CountOfActivePixels", numberOfActivePixels[0]);
+        particleShader.SetBuffer(generateKernelID, "NumberOfActivePixels", numberOfActivePixelsBuffer);
         particleShader.SetFloat("deltaTime", Time.deltaTime);
         particleShader.SetFloat("speed", speed);
         particleShader.SetFloat("lifetime", lifetime);
+        particleShader.SetFloat("mainParticleSize", mainParticleSize);
+        particleShader.SetFloat("otherParticleSize", otherParticleSize);
 
         particleShader.SetBuffer(generateKernelID, "ParticleBuffer", particleBuffer);
         particleShader.SetBuffer(generateKernelID, "ActivePositions", activePositionsBuffer);
+        particleShader.SetBuffer(generateKernelID, "counter", counter);
 
         mWarpCount = Mathf.CeilToInt((float)particleCount / WARP_SIZE);
-        particleShader.Dispatch(generateKernelID, mWarpCount, 1, 1);*/
+        particleShader.Dispatch(generateKernelID, mWarpCount, 1, 1);
+
+        particleMaterial.SetBuffer("particleBuffer", particleBuffer);
+
     }
 
     void OnRenderObject()
@@ -156,5 +171,10 @@ public class ParticleFromVideo : MonoBehaviour
         if (particleBuffer != null)
             particleBuffer.Release();
         particleBuffer = null;
+
+        if (counter != null)
+            counter.Release();
+        counter = null;
+        
     }
 }

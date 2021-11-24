@@ -12,6 +12,8 @@ public class ParticleRenderer : MonoBehaviour
         public Vector3 position;
         public Vector3 velocity;
         public float life;
+        public Vector3 color;
+        public float size;
     }
 
     public ParticleType particleType;
@@ -58,7 +60,7 @@ public class ParticleRenderer : MonoBehaviour
         }
 
         // create compute buffer
-        particleBuffer = new ComputeBuffer(particleCount, 7 * sizeof(float));
+        particleBuffer = new ComputeBuffer(particleCount, 11 * sizeof(float));
         particleBuffer.SetData(particleArray);
 
         // find the id of the kernel

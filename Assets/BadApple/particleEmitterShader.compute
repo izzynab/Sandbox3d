@@ -6,6 +6,8 @@ struct Particle
 	float3 position;
 	float3 velocity;
 	float life;
+	float3 color;
+	float size;
 };
 
 // Particle's data, shared with the shader
@@ -57,6 +59,8 @@ void CSParticle(uint3 id : SV_DispatchThreadID)
 		particleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, spawnPosition.z);
 		particleBuffer[id.x].life = lifetime;
 		particleBuffer[id.x].velocity = float3(0, 0,0);
+		particleBuffer[id.x].color =  float3(1, 0,1);
+		particleBuffer[id.x].size = 1;
 	}
 
 }
