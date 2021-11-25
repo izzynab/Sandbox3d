@@ -25,6 +25,7 @@ public class Converter : MonoBehaviour
     public float particleThreshold;
 
     public float randomizeParticleMultipler = 10;
+    public bool invert;
 
     RenderTexture videoRenderTex;
     VideoPlayer videoPlayer;
@@ -79,6 +80,7 @@ public class Converter : MonoBehaviour
         convertShader.SetFloat("Resolution", resolutionOfVideo);
         convertShader.SetFloat("randomizeParticleMultipler", randomizeParticleMultipler);
         convertShader.SetInt("resolutionOfParticles", resolutionOfParticles);
+        convertShader.SetBool("Invert", invert);
 
         convertShader.SetTexture(kernelSobel, "ClipTexture", videoRenderTex);
         convertShader.SetBuffer(kernelSobel, "ActivePositions", activePositionsBuffer);

@@ -28,8 +28,6 @@ public class ParticleFromVideo : MonoBehaviour
     public float lifetime = 1;
     public int particleCount = 1000000;
 
-    public bool invert;
-
     public float mainParticleSize = 1;
     public float otherParticleSize = 0.2f;
 
@@ -57,7 +55,7 @@ public class ParticleFromVideo : MonoBehaviour
 
     void Update()
     {
-        //if(Input.GetKeyDown(KeyCode.P))
+        if(Input.GetKeyDown(KeyCode.P))
             UpdateShaders();
 
         if (particleType == ParticleType.Mesh)

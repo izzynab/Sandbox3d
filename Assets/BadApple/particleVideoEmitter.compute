@@ -49,7 +49,7 @@ void CSGenerate(uint3 id : SV_DispatchThreadID)
 {
 	float2 spawnPosition;
 
-	//if(id.x <= NumberOfActivePixels)
+	if(id.x <= NumberOfActivePixels)
 	{
 		
 		spawnPosition = ActivePositions[id.x%NumberOfActivePixels];
