@@ -1,50 +1,5 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSActivePixels
-#pragma kernel CSActivePixelsInvert
 #pragma kernel CSGenerate
-
-Texture2D<float4> ResultTexture;
-SamplerState sampler_ResultTexture;
-
-RWStructuredBuffer<int2> ActivePositions;
-RWStructuredBuffer<uint> NumberOfActivePixels;
-
-float ParticleThreshold;
-float Resolution;
-int resolutionOfParticles;
-float deltaTime;
-float randomizeParticleMultipler;
-
-
-float rand(float2 co){
-    return frac(sin(dot(co, float2(12.9898, 78.233))) * 43758.5453);
-}
-
-[numthreads(1, 1, 1)]
-void CSActivePixels(uint3 id : SV_DispatchThreadID)
-{
-	ResultTexture.SampleLevel(sampler_ResultTexture, id.xy,0); 
-	float4 col = ResultTexture[id.xy*resolutionOfParticles];
-
-    if(col.r > ParticleThreshold)
-    {
-        ActivePositions[NumberOfActivePixels[0]] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;   
-		InterlockedAdd(NumberOfActivePixels[0],1);        
-    }
-}
-
-[numthreads(1, 1, 1)]
-void CSActivePixelsInvert(uint3 id : SV_DispatchThreadID)
-{
-	ResultTexture.SampleLevel(sampler_ResultTexture, id.xy,0); 
-	float4 col = ResultTexture[id.xy*resolutionOfParticles];
-
-    if(col.r <= ParticleThreshold)
-    {
-        ActivePositions[NumberOfActivePixels[0]] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;  
-		InterlockedAdd(NumberOfActivePixels[0],1);        
-    }
-}
 
  // Particle's data
 struct Particle
@@ -58,12 +13,15 @@ struct Particle
 
 // Particle's data, shared with the shader
 RWStructuredBuffer<Particle> ParticleBuffer;
-RWStructuredBuffer<int> counter;
 
+RWStructuredBuffer<int2> ActivePositions;
+
+int NumberOfActivePixels;
 int CountOfActivePixels;
 
 float speed;
 float lifetime;
+float deltaTime;
 float mainParticleSize;
 float otherParticleSize;
 
@@ -79,38 +37,46 @@ uint rand_xorshift()
 	return rng_state;
 }
 
+//rand from -1 to 1
+float rand_xor()
+{
+	return float(rand_xorshift()) * (1.0 / 4294967296.0) *2 - 1;
+}
+
+
 [numthreads(64, 1, 1)]
 void CSGenerate(uint3 id : SV_DispatchThreadID)
 {
 	float2 spawnPosition;
 
-	if(id.x <= NumberOfActivePixels[0])
+	//if(id.x <= NumberOfActivePixels)
 	{
 		
-		spawnPosition = ActivePositions[id.x%NumberOfActivePixels[0]];
+		spawnPosition = ActivePositions[id.x%NumberOfActivePixels];
 		ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
 		ParticleBuffer[id.x].color = float3(1.0,0.5,0.0);
 		ParticleBuffer[id.x].size = mainParticleSize;
 
 		//ParticleBuffer[id.x].life -= deltaTime;
-		//float3 dir = normalize(float3(rand(id.xx)-0.5,rand(id.xx*2)-0.5,rand(id.xx*3)-0.5));
+		//float3 dir = normalize(float3(rand_xor()-0.5,rand_xor()-0.5,rand_xor()-0.5));
 
-		//ParticleBuffer[id.x].velocity = dir*speed*(rand(id.xx*4)+1);
+		//ParticleBuffer[id.x].velocity = dir*speed*(rand_xor()+1);
 		//ParticleBuffer[id.x].position += ParticleBuffer[id.x].velocity*deltaTime;
 	
 	}
-	else
+	//else
 	{
-		spawnPosition = ActivePositions[id.x%NumberOfActivePixels[0]];
+		return;
+		spawnPosition = ActivePositions[id.x%NumberOfActivePixels];
 		
-		//ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
+		ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
 		ParticleBuffer[id.x].color = float3(0.2,0.5,1.0);
 		ParticleBuffer[id.x].size = otherParticleSize;
 
 		ParticleBuffer[id.x].life -= deltaTime;
-		float3 dir = normalize(float3(rand(id.xx)-0.5,rand(id.xx*2)-0.5,rand(id.xx*3)-0.5));
+		float3 dir = normalize(float3(rand_xor()-0.5,rand_xor()-0.5,rand_xor()-0.5));
 		
-		ParticleBuffer[id.x].velocity = dir*speed*(rand(id.xx*4)+1);
+		ParticleBuffer[id.x].velocity = dir*speed*(rand_xor()+1);
 		ParticleBuffer[id.x].position += ParticleBuffer[id.x].velocity*deltaTime;
 
 		if (ParticleBuffer[id.x].life <= 0)
@@ -122,7 +88,7 @@ void CSGenerate(uint3 id : SV_DispatchThreadID)
 				float2 normalF2 = normalize(float2(f0, f1)) * 0.8f;
 				normalF2 *= float(rand_xorshift()) * (1.0 / 4294967296.0);
 		
-				ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
+				//ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
 				//ParticleBuffer[id.x].position = float3(0, 0, 0);
 				ParticleBuffer[id.x].life = lifetime;
 				ParticleBuffer[id.x].velocity = float3(0, 0,0);

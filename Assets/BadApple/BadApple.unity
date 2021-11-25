@@ -139,7 +139,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 4294967295
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &71124464
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -152,12 +152,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5306b3393a51a4d4788ea16d75e77c56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particleType: 1
+  particleType: 0
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   particleMaterial: {fileID: 2100000, guid: 4aab5cb7b6a16a64db82753125f53e2d, type: 2}
   direction: {x: 0, y: 0, z: 0.39}
   speed: 2
-  lifetime: 0.2
+  lifetime: 3.43
   particleCount: 100000
   particleEmitterShader: {fileID: 7200000, guid: d963fe244ae64a14f9df78bc22a6c9fb, type: 3}
 --- !u!4 &71124465
@@ -168,7 +168,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 71124463}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.69, y: 5.68, z: -2.62}
+  m_LocalPosition: {x: -1.2, y: 8.31, z: -0.08}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -442,13 +442,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 827436756}
-  m_LocalRotation: {x: -0, y: 0.19683841, z: -0, w: 0.98043597}
-  m_LocalPosition: {x: -2.98, y: 0, z: -5}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.98, y: 8.51, z: -5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 6
-  m_LocalEulerAnglesHint: {x: 0, y: 22.704, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &827436762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -480,7 +480,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1435942419
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -488,7 +488,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1435942418}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0fff4fe6a00468e499e2d9afd688573e, type: 3}
   m_Name: 
@@ -497,6 +497,10 @@ MonoBehaviour:
   clip: {fileID: 32900000, guid: a46ebf1faf7b1c44da7854485933c40f, type: 3}
   convertShader: {fileID: 7200000, guid: e16016b72e32205458f903124e654a90, type: 3}
   materialBlitResult: {fileID: 2100000, guid: ee28bb4051abf97498fb5df55d8991eb, type: 2}
+  resolutionOfVideo: 1
+  resolutionOfParticles: 1
+  particleThreshold: 0.9
+  randomizeParticleMultipler: 10
 --- !u!328 &1435942420
 VideoPlayer:
   m_ObjectHideFlags: 0
@@ -553,25 +557,21 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1435942418}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1aa0e1320166cca43bf895b09ba4239e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particleType: 1
+  particleType: 0
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   particleMaterial: {fileID: 2100000, guid: 4aab5cb7b6a16a64db82753125f53e2d, type: 2}
   particleShader: {fileID: 7200000, guid: 22ad008183e9d62479be129f77941bc1, type: 3}
   speed: 5.08
   lifetime: 3
-  particleCount: 1000000
-  resolutionOfVideo: 0.85
-  resolutionOfParticles: 8
+  particleCount: 10000
   invert: 0
-  particleThreshold: 0.98
   mainParticleSize: 1.89
   otherParticleSize: 0.86
-  randomizeParticleMultipler: 10
 --- !u!1 &1614320585
 GameObject:
   m_ObjectHideFlags: 0

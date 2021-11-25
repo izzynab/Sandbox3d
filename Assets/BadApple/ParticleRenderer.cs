@@ -56,7 +56,7 @@ public class ParticleRenderer : MonoBehaviour
         for (int i = 0; i < particleCount; i++)
         {
             // Initial life value
-            particleArray[i].life = Random.value * lifetime + 1;
+            //particleArray[i].life = Random.value * lifetime + 1;
         }
 
         // create compute buffer

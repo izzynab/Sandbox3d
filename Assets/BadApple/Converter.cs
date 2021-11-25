@@ -20,7 +20,12 @@ public class Converter : MonoBehaviour
     public Material materialBlitResult;
     private Texture2D resultTexture;
 
-    RenderTexture result;
+    public float resolutionOfVideo = 1;
+    public int resolutionOfParticles = 1;
+    public float particleThreshold;
+
+    public float randomizeParticleMultipler = 10;
+
     RenderTexture videoRenderTex;
     VideoPlayer videoPlayer;
 
@@ -28,26 +33,19 @@ public class Converter : MonoBehaviour
     int kernelThreshold;
     int kernelGreyscale;
 
+    private ComputeBuffer activePositionsBuffer;
+    private ComputeBuffer numberOfActivePixelsBuffer;
 
-    public RenderTexture GetResultTexture()
-    {
-        return result;
-    }
+    private uint numberOfActivePixels;
 
-    // Start is called before the first frame update
     void Start()
     {
         if (Screen.width != clip.width || Screen.height != clip.height)
         {
-            //Debug.Log("Sizes of clip and screen do not match, plese change the resolution of the screen to: " +clip.width + " " + clip.height);
             Screen.SetResolution((int)clip.width, (int)clip.height, false);           
         }
 
-        //FindObjectOfType<Camera>().transform.position = new Vector3(clip.width / 2, clip.height / 2, -650);
-
-        result = new RenderTexture((int)clip.width, (int)clip.height, 0);
-        result.enableRandomWrite = true;
-        result.Create();
+        FindObjectOfType<Camera>().transform.position = new Vector3(clip.width / 2, clip.height / 2, -650);
 
         resultTexture = new Texture2D((int)clip.width, (int)clip.height);
 
@@ -66,21 +64,33 @@ public class Converter : MonoBehaviour
         kernelThreshold = convertShader.FindKernel("CSThreshold");
         kernelGreyscale = convertShader.FindKernel("CSGreyscale");
 
+        numberOfActivePixelsBuffer = new ComputeBuffer(1, sizeof(uint));
+        uint[] data = { 0 };
+        numberOfActivePixelsBuffer.SetData(data);
+        activePositionsBuffer = new ComputeBuffer((videoRenderTex.width * videoRenderTex.height), sizeof(int) * 2);
 
-        UpdateBuffers();
+        //UpdateBuffers();
     }
 
 
     void UpdateBuffers()
     {
+        convertShader.SetFloat("ParticleThreshold", particleThreshold);
+        convertShader.SetFloat("Resolution", resolutionOfVideo);
+        convertShader.SetFloat("randomizeParticleMultipler", randomizeParticleMultipler);
+        convertShader.SetInt("resolutionOfParticles", resolutionOfParticles);
+
         convertShader.SetTexture(kernelSobel, "ClipTexture", videoRenderTex);
-        convertShader.SetTexture(kernelSobel, "Result", result);
+        convertShader.SetBuffer(kernelSobel, "ActivePositions", activePositionsBuffer);
+        convertShader.SetBuffer(kernelSobel, "NumberOfActivePixels", numberOfActivePixelsBuffer);
 
         convertShader.SetTexture(kernelThreshold, "ClipTexture", videoRenderTex);
-        convertShader.SetTexture(kernelThreshold, "Result", result);
+        convertShader.SetBuffer(kernelThreshold, "ActivePositions", activePositionsBuffer);
+        convertShader.SetBuffer(kernelThreshold, "NumberOfActivePixels", numberOfActivePixelsBuffer);
 
         convertShader.SetTexture(kernelGreyscale, "ClipTexture", videoRenderTex);
-        convertShader.SetTexture(kernelGreyscale, "Result", result);
+        convertShader.SetBuffer(kernelGreyscale, "ActivePositions", activePositionsBuffer);
+        convertShader.SetBuffer(kernelGreyscale, "NumberOfActivePixels", numberOfActivePixelsBuffer);
 
 
         switch (videoConvertType)
@@ -96,6 +106,16 @@ public class Converter : MonoBehaviour
                 break;
         }
 
+
+        uint[] data = { 0 };
+        numberOfActivePixelsBuffer.GetData(data);
+        numberOfActivePixels = data[0];
+
+
+        uint[] clear = { 0 };
+        numberOfActivePixelsBuffer.SetData(clear);
+
+        //Debug.Log("numberOfActivePixels after converter dispatch " + numberOfActivePixels);
 
     }
 
@@ -119,18 +139,32 @@ public class Converter : MonoBehaviour
 
         UpdateBuffers();
 
-        RenderTexture.active = result;
-        resultTexture.ReadPixels(new Rect(0, 0, result.width, result.height), 0, 0);
+        RenderTexture.active = videoRenderTex;
+        resultTexture.ReadPixels(new Rect(0, 0, videoRenderTex.width, videoRenderTex.height), 0, 0);
         resultTexture.Apply();
 
         materialBlitResult.mainTexture = resultTexture;
     }
 
-
-    private void OnRenderImage(RenderTexture source, RenderTexture destination)
+    public uint GetNumberOfActivePixels()
     {
-        Graphics.Blit(result, destination);
+        return numberOfActivePixels;
     }
 
+    public ComputeBuffer GetActivePositionsBuffer()
+    {
+        return activePositionsBuffer;
+    }
 
+    void OnDisable()
+    {
+        if (activePositionsBuffer != null)
+            activePositionsBuffer.Release();
+        activePositionsBuffer = null;
+
+        if (numberOfActivePixelsBuffer != null)
+            numberOfActivePixelsBuffer.Release();
+        numberOfActivePixelsBuffer = null;
+
+    }
 }

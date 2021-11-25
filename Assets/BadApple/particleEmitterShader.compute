@@ -35,6 +35,12 @@ uint rand_xorshift()
 	return rng_state;
 }
 
+//rand from -1 to 1
+float rand_xor()
+{
+	return float(rand_xorshift()) * (1.0 / 4294967296.0) *2 - 1;
+}
+
 [numthreads(256, 1, 1)]
 void CSParticle(uint3 id : SV_DispatchThreadID)
 {
@@ -57,9 +63,9 @@ void CSParticle(uint3 id : SV_DispatchThreadID)
 		normalF2 *= float(rand_xorshift()) * (1.0 / 4294967296.0);
 
 		particleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, spawnPosition.z);
-		particleBuffer[id.x].life = lifetime;
+		particleBuffer[id.x].life = lifetime + rand_xor()*lifetime + 1;
 		particleBuffer[id.x].velocity = float3(0, 0,0);
-		particleBuffer[id.x].color =  float3(1, 0,1);
+		particleBuffer[id.x].color =  float3(0.8, 0,0.5);
 		particleBuffer[id.x].size = 1;
 	}
 
