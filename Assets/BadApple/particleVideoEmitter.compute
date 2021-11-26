@@ -15,8 +15,8 @@ struct Particle
 RWStructuredBuffer<Particle> ParticleBuffer;
 
 RWStructuredBuffer<int2> ActivePositions;
-
 int NumberOfActivePixels;
+
 int CountOfActivePixels;
 
 float speed;
@@ -44,7 +44,7 @@ float rand_xor()
 }
 
 
-[numthreads(64, 1, 1)]
+[numthreads(256, 1, 1)]
 void CSGenerate(uint3 id : SV_DispatchThreadID)
 {
 	float2 spawnPosition;
@@ -59,14 +59,12 @@ void CSGenerate(uint3 id : SV_DispatchThreadID)
 
 		//ParticleBuffer[id.x].life -= deltaTime;
 		//float3 dir = normalize(float3(rand_xor()-0.5,rand_xor()-0.5,rand_xor()-0.5));
-
 		//ParticleBuffer[id.x].velocity = dir*speed*(rand_xor()+1);
 		//ParticleBuffer[id.x].position += ParticleBuffer[id.x].velocity*deltaTime;
 	
 	}
-	//else
+	else
 	{
-		return;
 		spawnPosition = ActivePositions[id.x%NumberOfActivePixels];
 		
 		ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);

@@ -65,17 +65,20 @@ public class Converter : MonoBehaviour
         kernelThreshold = convertShader.FindKernel("CSThreshold");
         kernelGreyscale = convertShader.FindKernel("CSGreyscale");
 
-        numberOfActivePixelsBuffer = new ComputeBuffer(1, sizeof(uint));
-        uint[] data = { 0 };
-        numberOfActivePixelsBuffer.SetData(data);
+       // uint[] data = { 0 };
+        //numberOfActivePixelsBuffer.SetData(data);
         activePositionsBuffer = new ComputeBuffer((videoRenderTex.width * videoRenderTex.height), sizeof(int) * 2);
 
         //UpdateBuffers();
     }
 
 
-    void UpdateBuffers()
+    public void UpdateBuffers()
     {
+        numberOfActivePixelsBuffer = new ComputeBuffer(1, sizeof(uint), ComputeBufferType.Counter);
+        numberOfActivePixelsBuffer.SetCounterValue(0);
+
+
         convertShader.SetFloat("ParticleThreshold", particleThreshold);
         convertShader.SetFloat("Resolution", resolutionOfVideo);
         convertShader.SetFloat("randomizeParticleMultipler", randomizeParticleMultipler);
@@ -98,27 +101,25 @@ public class Converter : MonoBehaviour
         switch (videoConvertType)
         {
             case VideoConvertType.Threshold:
-                convertShader.Dispatch(kernelThreshold, (videoRenderTex.width ), (videoRenderTex.height), 1);
+                convertShader.Dispatch(kernelThreshold, Mathf.CeilToInt(videoRenderTex.width / resolutionOfParticles), Mathf.CeilToInt(videoRenderTex.height / resolutionOfParticles), 1);
                 break;
             case VideoConvertType.SobelEdgeDetection:
-                convertShader.Dispatch(kernelSobel, (videoRenderTex.width), (videoRenderTex.height ), 1);
+                convertShader.Dispatch(kernelSobel, Mathf.CeilToInt(videoRenderTex.width/ resolutionOfParticles), Mathf.CeilToInt(videoRenderTex.height / resolutionOfParticles), 1);
                 break;
             case VideoConvertType.Greyscale:
-                convertShader.Dispatch(kernelGreyscale, (videoRenderTex.width), (videoRenderTex.height ), 1);
+                convertShader.Dispatch(kernelGreyscale, Mathf.CeilToInt(videoRenderTex.width / resolutionOfParticles), Mathf.CeilToInt(videoRenderTex.height / resolutionOfParticles), 1);
                 break;
         }
+       
+        ComputeBuffer argBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.IndirectArguments);
+        int[] args = new int[] { 0 };
+        ComputeBuffer.CopyCount(numberOfActivePixelsBuffer, argBuffer, 0);
+        argBuffer.GetData(args);
+       // Debug.Log("Count " + args[0]);
+        numberOfActivePixels = (uint)args[0];
 
-
-        uint[] data = { 0 };
-        numberOfActivePixelsBuffer.GetData(data);
-        numberOfActivePixels = data[0];
-
-
-        uint[] clear = { 0 };
-        numberOfActivePixelsBuffer.SetData(clear);
-
-        //Debug.Log("numberOfActivePixels after converter dispatch " + numberOfActivePixels);
-
+        numberOfActivePixelsBuffer.Release();
+        argBuffer.Release();
     }
 
     private void Update()
@@ -139,7 +140,7 @@ public class Converter : MonoBehaviour
             else videoPlayer.playbackSpeed = 1;
         }
 
-        UpdateBuffers();
+        //UpdateBuffers();
 
         RenderTexture.active = videoRenderTex;
         resultTexture.ReadPixels(new Rect(0, 0, videoRenderTex.width, videoRenderTex.height), 0, 0);
@@ -153,9 +154,9 @@ public class Converter : MonoBehaviour
         return numberOfActivePixels;
     }
 
-    public ComputeBuffer GetActivePositionsBuffer()
+    public ref ComputeBuffer GetActivePositionsBuffer()
     {
-        return activePositionsBuffer;
+        return ref activePositionsBuffer;
     }
 
     void OnDisable()

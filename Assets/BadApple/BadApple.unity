@@ -493,7 +493,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0fff4fe6a00468e499e2d9afd688573e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  videoConvertType: 0
+  videoConvertType: 1
   clip: {fileID: 32900000, guid: a46ebf1faf7b1c44da7854485933c40f, type: 3}
   convertShader: {fileID: 7200000, guid: e16016b72e32205458f903124e654a90, type: 3}
   materialBlitResult: {fileID: 2100000, guid: ee28bb4051abf97498fb5df55d8991eb, type: 2}
@@ -501,6 +501,7 @@ MonoBehaviour:
   resolutionOfParticles: 1
   particleThreshold: 0.9
   randomizeParticleMultipler: 10
+  invert: 0
 --- !u!328 &1435942420
 VideoPlayer:
   m_ObjectHideFlags: 0
@@ -562,14 +563,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1aa0e1320166cca43bf895b09ba4239e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particleType: 0
+  particleType: 1
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   particleMaterial: {fileID: 2100000, guid: 4aab5cb7b6a16a64db82753125f53e2d, type: 2}
   particleShader: {fileID: 7200000, guid: 22ad008183e9d62479be129f77941bc1, type: 3}
   speed: 5.08
   lifetime: 3
-  particleCount: 10000
-  invert: 0
+  particleCount: 1000000
   mainParticleSize: 1.89
   otherParticleSize: 0.86
 --- !u!1 &1614320585

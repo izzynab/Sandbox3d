@@ -1,6 +1,6 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSThreshold
 #pragma kernel CSSobel
+#pragma kernel CSThreshold
 #pragma kernel CSGreyscale
 
 Texture2D<float4> ClipTexture;
@@ -14,10 +14,12 @@ float Resolution;
 int resolutionOfParticles;
 float randomizeParticleMultipler;
 bool Invert;
+int clipWidth;
 
 float rand(float2 co){
     return frac(sin(dot(co, float2(12.9898, 78.233))) * 43758.5453);
 }
+
 
 [numthreads(1, 1, 1)]
 void CSSobel(uint3 id : SV_DispatchThreadID)
@@ -25,11 +27,11 @@ void CSSobel(uint3 id : SV_DispatchThreadID)
 	ClipTexture.SampleLevel(sampler_ClipTexture, id.xy,0);
     float4 n[9];
 
-	float2 coord = id.xy;
+	float2 coord = id.xy*resolutionOfParticles;
 	float w = 1.0;
 	float h = 1.0;
 
-	n[0] = ClipTexture[coord + float2( -w, -h)];
+	n[0] = ClipTexture[(coord + float2( -w, -h))];
 	n[1] = ClipTexture[coord + float2(0.0, -h)];
 	n[2] = ClipTexture[coord + float2(  w, -h)];
 	n[3] = ClipTexture[coord + float2( -w, 0.0)];
@@ -49,51 +51,53 @@ void CSSobel(uint3 id : SV_DispatchThreadID)
 	{
 		 if(outcol.r > ParticleThreshold)
 		 {
-			ActivePositions[NumberOfActivePixels[0]] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;   
-			InterlockedAdd(NumberOfActivePixels[0],1);        
+			uint count = NumberOfActivePixels.IncrementCounter();
+			ActivePositions[count] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;      
 		 }
 	}
 	else
 	{
 	 if(outcol.r < ParticleThreshold)
 		 {
-			ActivePositions[NumberOfActivePixels[0]] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;   
-			InterlockedAdd(NumberOfActivePixels[0],1);        
+			uint count = NumberOfActivePixels.IncrementCounter();
+			ActivePositions[count] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;      
 		 }
 	}
 }
+
+
 
 [numthreads(1, 1, 1)]
 void CSThreshold(uint3 id : SV_DispatchThreadID)
 {
 	ClipTexture.SampleLevel(sampler_ClipTexture, id.xy,0);   
-	//Result[id.xy]= ClipTexture[id.xy];
-
 	float4 outcol = ClipTexture[id.xy*resolutionOfParticles];
 
-   if(Invert)
+
+    if(Invert)
 	{
-		 if(outcol.r > ParticleThreshold)
-		 {
-			ActivePositions[NumberOfActivePixels[0]] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;   
-			InterlockedAdd(NumberOfActivePixels[0],1);        
+		 if(outcol.r > 0.9)
+		 {			
+			uint count = NumberOfActivePixels.IncrementCounter();
+			ActivePositions[count] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;     
 		 }
 	}
 	else
 	{
 	 if(outcol.r < ParticleThreshold)
-		 {
-			ActivePositions[NumberOfActivePixels[0]] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;   
-			InterlockedAdd(NumberOfActivePixels[0],1);        
+		 {			
+			uint count = NumberOfActivePixels.IncrementCounter();
+			ActivePositions[count] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;          
 		 }
 	}
 }
+
 
 [numthreads(1, 1, 1)]
 void CSGreyscale(uint3 id : SV_DispatchThreadID)
 {
 	ClipTexture.SampleLevel(sampler_ClipTexture, id.xy,0);   
-    float4 col = ClipTexture[id.xy];
+    float4 col = ClipTexture[id.xy*resolutionOfParticles];
 
 	float grey = (col.r + col.g + col.b)/3.0;
 	
@@ -103,16 +107,16 @@ void CSGreyscale(uint3 id : SV_DispatchThreadID)
 	{
 		 if(outcol.r > ParticleThreshold)
 		 {
-			ActivePositions[NumberOfActivePixels[0]] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;   
-			InterlockedAdd(NumberOfActivePixels[0],1);        
+			uint count = NumberOfActivePixels.IncrementCounter();
+			ActivePositions[count] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;     
 		 }
 	}
 	else
 	{
 	 if(outcol.r < ParticleThreshold)
 		 {
-			ActivePositions[NumberOfActivePixels[0]] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;   
-			InterlockedAdd(NumberOfActivePixels[0],1);        
+			uint count = NumberOfActivePixels.IncrementCounter();
+			ActivePositions[count] = float2(rand(id.xy),rand(id.xy))*randomizeParticleMultipler*Resolution + id.xy*resolutionOfParticles*Resolution;      
 		 }
 	}
    

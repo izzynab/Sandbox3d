@@ -38,7 +38,7 @@ public class ParticleFromVideo : MonoBehaviour
     private int generateKernelID;
 
     /// Number of particle per warp.
-    private const int WARP_SIZE = 64;
+    private const int WARP_SIZE = 256;
     /// Number of warp needed.
     private int mWarpCount;
 
@@ -55,8 +55,9 @@ public class ParticleFromVideo : MonoBehaviour
 
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.P))
-            UpdateShaders();
+        converter.UpdateBuffers();
+        UpdateShaders();
+
 
         if (particleType == ParticleType.Mesh)
         {
@@ -66,22 +67,19 @@ public class ParticleFromVideo : MonoBehaviour
 
     void UpdateShaders()
     {     
-        if (particleBuffer != null) particleBuffer.Release();
-
-        ComputeBuffer activePositionsBuffer = converter.GetActivePositionsBuffer();
+        if (particleBuffer != null) particleBuffer.Release(); 
 
         particleBuffer = new ComputeBuffer(particleCount, sizeof(float) * 11);
-
-        //Debug.Log("numberOfActivePixels in particle shader"+ converter.GetNumberOfActivePixels());
 
         particleShader.SetFloat("deltaTime", Time.deltaTime);
         particleShader.SetFloat("speed", speed);
         particleShader.SetFloat("lifetime", lifetime);
         particleShader.SetFloat("mainParticleSize", mainParticleSize);
         particleShader.SetFloat("otherParticleSize", otherParticleSize);
+
         particleShader.SetInt("NumberOfActivePixels", (int)converter.GetNumberOfActivePixels());
-        
-        particleShader.SetBuffer(generateKernelID, "ActivePositions", activePositionsBuffer);
+      
+        particleShader.SetBuffer(generateKernelID, "ActivePositions", converter.GetActivePositionsBuffer());
         particleShader.SetBuffer(generateKernelID, "ParticleBuffer", particleBuffer);
 
         
