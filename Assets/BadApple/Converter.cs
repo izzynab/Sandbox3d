@@ -6,8 +6,8 @@ using UnityEditor;
 
 [RequireComponent(typeof(VideoPlayer))]
 public class Converter : MonoBehaviour
-{ 
-    public enum VideoConvertType {Threshold,SobelEdgeDetection,Greyscale};
+{
+    public enum VideoConvertType { Threshold, SobelEdgeDetection, Greyscale };
 
     [Header("Conversion")]
     public VideoConvertType videoConvertType;
@@ -27,6 +27,9 @@ public class Converter : MonoBehaviour
     public float randomizeParticleMultipler = 10;
     public bool invert;
 
+    [HideInInspector]
+    public int numberOfPixels = 0;
+
     RenderTexture videoRenderTex;
     VideoPlayer videoPlayer;
 
@@ -38,6 +41,11 @@ public class Converter : MonoBehaviour
     private ComputeBuffer numberOfActivePixelsBuffer;
 
     private uint numberOfActivePixels;
+
+    private void OnValidate()
+    {
+        numberOfPixels = Mathf.CeilToInt(clip.width / resolutionOfParticles)*Mathf.CeilToInt(clip.height / resolutionOfParticles);
+    }
 
     void Start()
     {

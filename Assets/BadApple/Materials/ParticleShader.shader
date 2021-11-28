@@ -9,7 +9,8 @@ Shader "Custom/Particle"
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Transparent" }
+        Blend SrcAlpha one
         LOD 100
 
         Pass
@@ -27,7 +28,7 @@ Shader "Custom/Particle"
 			    float3 position;
 			    float3 velocity;
 			    float life;
-                float3 color;
+                float4 color;
                 float size;
 		    };
 		
@@ -53,8 +54,8 @@ Shader "Custom/Particle"
                 // Color
 			    float life = data.life;
 			    float lerpVal = life * 0.25f;
-			    o.color = fixed4(data.color,1);
-
+			    //o.color = fixed4(0.9,lerpVal-0.2,lerpVal+0.2,life*4);
+                o.color = data.color;
                 return o;
             }
 

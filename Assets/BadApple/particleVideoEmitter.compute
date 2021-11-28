@@ -1,5 +1,6 @@
-// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSGenerate
+#pragma kernel CSGenerate _RandomSphere
+#pragma kernel CSGenerate _RandomCircleXY
+#pragma kernel CSGenerate _RandomCircleXZ
 
  // Particle's data
 struct Particle
@@ -7,12 +8,13 @@ struct Particle
 	float3 position;
 	float3 velocity;
 	float life;
-	float3 color;
+	float4 color;
 	float size;
 };
 
 // Particle's data, shared with the shader
 RWStructuredBuffer<Particle> ParticleBuffer;
+RWStructuredBuffer<float4> gradientBuffer;
 
 RWStructuredBuffer<int2> ActivePositions;
 int NumberOfActivePixels;
@@ -24,7 +26,14 @@ float lifetime;
 float deltaTime;
 float mainParticleSize;
 float otherParticleSize;
+//float alphaBlendFactor;
 
+float3 mainParticleColor;
+
+//float3 otherParticleColorIn;
+//float3 otherParticleColorOut;
+
+//float interpolationval;
 
 uint rng_state;
 
@@ -43,71 +52,68 @@ float rand_xor()
 	return float(rand_xorshift()) * (1.0 / 4294967296.0) *2 - 1;
 }
 
+float3 interpolate(float3 color1, float3 color2 , float val)
+{
+	//float3 value = (otherParticleColorIn.x + )
+	return float3(color1 * val + color2*(1-val));
+}
+
+float3 interpolate3(float3 color1, float3 color2 , float3 color3 ,float val)
+{
+	float m = 0.33333;
+	if(val <= m)
+	{
+		return float3(color1 * val + color2*(1-val));		
+	}
+}
 
 [numthreads(256, 1, 1)]
 void CSGenerate(uint3 id : SV_DispatchThreadID)
 {
 	float2 spawnPosition;
+	rng_state = id.x;
+	float random = rand_xor();
 
 	if(id.x <= NumberOfActivePixels)
 	{
-		
 		spawnPosition = ActivePositions[id.x%NumberOfActivePixels];
 		ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
-		ParticleBuffer[id.x].color = float3(1.0,0.5,0.0);
+		ParticleBuffer[id.x].color = float4(mainParticleColor,1);
 		ParticleBuffer[id.x].size = mainParticleSize;
-
-		//ParticleBuffer[id.x].life -= deltaTime;
-		//float3 dir = normalize(float3(rand_xor()-0.5,rand_xor()-0.5,rand_xor()-0.5));
-		//ParticleBuffer[id.x].velocity = dir*speed*(rand_xor()+1);
-		//ParticleBuffer[id.x].position += ParticleBuffer[id.x].velocity*deltaTime;
-	
 	}
 	else
 	{
 		spawnPosition = ActivePositions[id.x%NumberOfActivePixels];
-		
-		ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
-		ParticleBuffer[id.x].color = float3(0.2,0.5,1.0);
-		ParticleBuffer[id.x].size = otherParticleSize;
-
 		ParticleBuffer[id.x].life -= deltaTime;
-		float3 dir = normalize(float3(rand_xor()-0.5,rand_xor()-0.5,rand_xor()-0.5));
-		
-		ParticleBuffer[id.x].velocity = dir*speed*(rand_xor()+1);
-		ParticleBuffer[id.x].position += ParticleBuffer[id.x].velocity*deltaTime;
+
+		float interpolationValue = ParticleBuffer[id.x].life/((random+1)*lifetime/2);
+		ParticleBuffer[id.x].color = gradientBuffer[floor(interpolationValue*100)];
+
+		float3 dir;
+
+#if _RandomSphere
+		dir = normalize(float3(rand_xor()-0.5, rand_xor()-0.5, rand_xor()-0.5));
+#endif
+
+#if _RandomCircleXY
+		dir = normalize(float3(rand_xor()-0.5, rand_xor()-0.5, 0));
+#endif
+
+#if _RandomCircleXZ
+		dir = normalize(float3(rand_xor()-0.5, 0, rand_xor()-0.5));
+#endif
+
+		ParticleBuffer[id.x].velocity = dir*speed;
+		ParticleBuffer[id.x].position += ParticleBuffer[id.x].velocity*0.05;
 
 		if (ParticleBuffer[id.x].life <= 0)
 			{
-				// http://www.reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
-				rng_state = id.x;
-				float f0 = float(rand_xorshift()) * (1.0 / 4294967296.0) - 0.5;
-				float f1 = float(rand_xorshift()) * (1.0 / 4294967296.0) - 0.5;
-				float2 normalF2 = normalize(float2(f0, f1)) * 0.8f;
-				normalF2 *= float(rand_xorshift()) * (1.0 / 4294967296.0);
-		
-				//ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
-				//ParticleBuffer[id.x].position = float3(0, 0, 0);
-				ParticleBuffer[id.x].life = lifetime;
+				ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
+				ParticleBuffer[id.x].life = (random+1)*lifetime/2;
 				ParticleBuffer[id.x].velocity = float3(0, 0,0);
+				ParticleBuffer[id.x].size = otherParticleSize;
 			}
 
 	}
-	
-
-	//if (ParticleBuffer[id.x].life <= 0)
-	//	{
-	//		// http://www.reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
-	//		rng_state = id.x;
-	//		float f0 = float(rand_xorshift()) * (1.0 / 4294967296.0) - 0.5;
-	//		float f1 = float(rand_xorshift()) * (1.0 / 4294967296.0) - 0.5;
-	//		float2 normalF2 = normalize(float2(f0, f1)) * 0.8f;
-	//		normalF2 *= float(rand_xorshift()) * (1.0 / 4294967296.0);
-	//
-	//		ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
-	//		ParticleBuffer[id.x].position = float3(0, 0, 0);
-	//		ParticleBuffer[id.x].life = lifetime;
-	//		ParticleBuffer[id.x].velocity = float3(0, 0,0);
-	//	}
 
 }
