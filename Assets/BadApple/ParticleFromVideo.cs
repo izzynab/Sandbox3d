@@ -6,8 +6,8 @@ using UnityEngine;
 public class ParticleFromVideo : MonoBehaviour
 {
     public enum ParticleType { Point, Mesh };
-    public enum EmitterShape { Sphere, CircleXY, CircleXZ };
-    private int numberOfShapes = 3;
+    public enum EmitterShape { Sphere, CircleXY, CircleXZ,Cone };
+    private int numberOfShapes = 4;
 
     struct Particle
     {
@@ -25,13 +25,16 @@ public class ParticleFromVideo : MonoBehaviour
     public ComputeShader particleShader;
 
     [Header("Spawn")]
-    [Range(0, 20)]
-    public float speed = 2;
+    [Range(0, 80)]
+    public float speed = 20;
     public float lifetime = 1;
     public int maxParticleCount = 1000000;
 
     [Header("Shape")]
     public EmitterShape emitterShape = EmitterShape.Sphere;
+    [Range(0,15)]
+    public float shapeDegrees = 60;
+    public float randomizeParticleMultipler = 2;
 
     [Header("Appearance")]
     public float mainParticleSize = 1;
@@ -69,6 +72,7 @@ public class ParticleFromVideo : MonoBehaviour
         for (int i = 0,j = 99;i<100;i++,j--)
         {
             data[j] = otherParticleGradient.Evaluate(i*0.01f);
+            Debug.Log("j: " + j.ToString() + "i: " + i.ToString());
         }
         gradientBuffer.SetData(data);
 
@@ -107,9 +111,9 @@ public class ParticleFromVideo : MonoBehaviour
         particleShader.SetFloat("lifetime", lifetime);
         particleShader.SetFloat("mainParticleSize", mainParticleSize);
         particleShader.SetFloat("otherParticleSize", otherParticleSize);
-        //particleShader.SetFloat("alphaBlendFactor", alphaBlendFactor);
+        particleShader.SetFloat("shapeDegrees", shapeDegrees);
+        particleShader.SetFloat("randomizeParticleMultipler", randomizeParticleMultipler);
         particleShader.SetInt("NumberOfActivePixels", (int)converter.GetNumberOfActivePixels());
-        //particleShader.SetFloat("interpolationval", interpolationval);
 
         float[] color = { mainParticleColor.r, mainParticleColor.g, mainParticleColor.b };
         particleShader.SetFloats("mainParticleColor", color);

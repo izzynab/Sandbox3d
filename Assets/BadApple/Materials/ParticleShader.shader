@@ -10,7 +10,7 @@ Shader "Custom/Particle"
     SubShader
     {
         Tags { "RenderType"="Transparent" }
-        Blend SrcAlpha one
+        Blend SrcAlpha OneMinusSrcAlpha
         LOD 100
 
         Pass
@@ -51,10 +51,6 @@ Shader "Custom/Particle"
 
                 v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(worldPosition, 1.0f));
-                // Color
-			    float life = data.life;
-			    float lerpVal = life * 0.25f;
-			    //o.color = fixed4(0.9,lerpVal-0.2,lerpVal+0.2,life*4);
                 o.color = data.color;
                 return o;
             }

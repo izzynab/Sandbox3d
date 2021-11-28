@@ -416,10 +416,10 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 3000
   field of view: 60
   orthographic: 0
-  orthographic size: 5
+  orthographic size: 400
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -568,11 +568,11 @@ MonoBehaviour:
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   particleMaterial: {fileID: 2100000, guid: 4aab5cb7b6a16a64db82753125f53e2d, type: 2}
   particleShader: {fileID: 7200000, guid: 22ad008183e9d62479be129f77941bc1, type: 3}
-  speed: 1.4
-  lifetime: 1.02
+  speed: 20
+  lifetime: 0.16
   maxParticleCount: 1000000
-  emitterShape: 0
-  mainParticleSize: 6
+  emitterShape: 3
+  mainParticleSize: 0
   otherParticleSize: 0.8
   mainParticleColor: {r: 1, g: 1, b: 1, a: 0}
   otherParticleGradient:

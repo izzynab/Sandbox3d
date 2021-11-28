@@ -49,9 +49,9 @@ public class Converter : MonoBehaviour
 
     void Start()
     {
-        if (Screen.width != clip.width || Screen.height != clip.height)
+       // if (Screen.width != clip.width || Screen.height != clip.height)
         {
-            Screen.SetResolution((int)clip.width, (int)clip.height, false);           
+            //Screen.SetResolution((int)clip.width, (int)clip.height, false);           
         }
 
         FindObjectOfType<Camera>().transform.position = new Vector3(clip.width / 2, clip.height / 2, -650);

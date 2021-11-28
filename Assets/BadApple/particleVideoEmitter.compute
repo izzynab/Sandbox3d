@@ -1,6 +1,9 @@
 #pragma kernel CSGenerate _RandomSphere
 #pragma kernel CSGenerate _RandomCircleXY
 #pragma kernel CSGenerate _RandomCircleXZ
+#pragma kernel CSGenerate _RandomCone
+
+float pi = 3.14159265359;
 
  // Particle's data
 struct Particle
@@ -26,14 +29,10 @@ float lifetime;
 float deltaTime;
 float mainParticleSize;
 float otherParticleSize;
-//float alphaBlendFactor;
+float shapeDegrees;
+float randomizeParticleMultipler;
 
 float3 mainParticleColor;
-
-//float3 otherParticleColorIn;
-//float3 otherParticleColorOut;
-
-//float interpolationval;
 
 uint rng_state;
 
@@ -52,19 +51,22 @@ float rand_xor()
 	return float(rand_xorshift()) * (1.0 / 4294967296.0) *2 - 1;
 }
 
-float3 interpolate(float3 color1, float3 color2 , float val)
+float3 randSphericalCap(float coneAngleDegree)
 {
-	//float3 value = (otherParticleColorIn.x + )
-	return float3(color1 * val + color2*(1-val));
-}
+float3 r;
 
-float3 interpolate3(float3 color1, float3 color2 , float3 color3 ,float val)
-{
-	float m = 0.33333;
-	if(val <= m)
-	{
-		return float3(color1 * val + color2*(1-val));		
-	}
+float coneAngle = coneAngleDegree * pi/180;
+
+float z = (rand_xor()) * (1 - cos(coneAngle)) + cos(coneAngle);
+float phi = (rand_xor()) * 2 * pi;
+float x = sqrt(pow(1-z,2))*cos(phi);
+float y = sqrt(pow(1-z,2))*sin(phi);
+
+
+  r = float3(x,y,z);
+  return r;
+
+
 }
 
 [numthreads(256, 1, 1)]
@@ -90,7 +92,7 @@ void CSGenerate(uint3 id : SV_DispatchThreadID)
 		ParticleBuffer[id.x].color = gradientBuffer[floor(interpolationValue*100)];
 
 		float3 dir;
-
+		//todo: cone towards the player
 #if _RandomSphere
 		dir = normalize(float3(rand_xor()-0.5, rand_xor()-0.5, rand_xor()-0.5));
 #endif
@@ -103,12 +105,15 @@ void CSGenerate(uint3 id : SV_DispatchThreadID)
 		dir = normalize(float3(rand_xor()-0.5, 0, rand_xor()-0.5));
 #endif
 
-		ParticleBuffer[id.x].velocity = dir*speed;
+#if _RandomCone
+		dir = normalize(float3(sin(90*rand_xor()),sin(90*rand_xor()),-shapeDegrees));
+#endif
+		ParticleBuffer[id.x].velocity = dir*speed*(rand_xor()+1)/2;
 		ParticleBuffer[id.x].position += ParticleBuffer[id.x].velocity*0.05;
 
 		if (ParticleBuffer[id.x].life <= 0)
 			{
-				ParticleBuffer[id.x].position = float3(spawnPosition.x, spawnPosition.y, 0);
+				ParticleBuffer[id.x].position = float3(float2(rand_xor(),rand_xor())*randomizeParticleMultipler + spawnPosition.xy, 0); 
 				ParticleBuffer[id.x].life = (random+1)*lifetime/2;
 				ParticleBuffer[id.x].velocity = float3(0, 0,0);
 				ParticleBuffer[id.x].size = otherParticleSize;
